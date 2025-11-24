@@ -2,7 +2,6 @@ package com.kaii.dentix.global.config;
 
 import com.kaii.dentix.domain.jwt.JwtAuthenticationFilter;
 import com.kaii.dentix.domain.jwt.JwtTokenUtil;
-import com.kaii.dentix.global.common.filter.VersionCheckFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,8 +19,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
@@ -29,43 +26,61 @@ public class WebSecurityConfig {
 
     private final JwtTokenUtil jwtTokenUtil;
 
-//    private final UserDeviceTypeService userDeviceTypeService;
-
-    public static String[] EXCLUDE_URLS = {
+    public static final String[] EXCLUDE_URLS = {
             "/actuator/health",
             "/docs/*",
+
             "/login", "/login/*",
+            "/password/*",
+
             "/service-agreement",
             "/contents", "/contents/*",
-            "/password/*",
+            "/isv/*", "/isv",
             "/organizations/check/**",
+
             "/admin/login",
             "/admin/register", "/admin/register/*",
             "/admin/account", "/admin/account/*",
-            "/admin/password","/admin/find-password",
+            "/admin/password",
+            "/admin/find-password",
             "/admin/auto-login"
     };
 
-    /**
-     *  비밀번호 암호화
-     */
     @Bean
-    public PasswordEncoder PasswordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
 
-        http.httpBasic(AbstractHttpConfigurer::disable) // rest api 만을 고려하여 기본 설정은 해제하겠습니다.
+        http
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable) // csrf 보안 토큰 disable 처리
-                .sessionManagement((sessionManagement) -> sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 토큰 기반 인증이므로 세션 역시 사용하지 않습니다.
-                .authorizeHttpRequests((authorizeHttpRequests) -> authorizeHttpRequests // 권한 설정
-                        .requestMatchers(EXCLUDE_URLS).permitAll()
-                        .anyRequest().hasAnyRole("USER", "ADMIN")
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // ★ 여기서 응답 헤더 직접 추가 (XSS / MIME / CSP / Frame 방지)
+                .headers(headers -> headers
+                        .addHeaderWriter((request, response) -> {
+                            // 스캐너가 요구하는 XSS 관련 헤더들
+                            response.setHeader("X-XSS-Protection", "1; mode=block");
+                            response.setHeader("X-Content-Type-Options", "nosniff");
+                            response.setHeader("X-Frame-Options", "DENY");
+                            // 너무 빡세지 않게 기본 CSP
+                            response.setHeader("Content-Security-Policy",
+                                    "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none'");
+                        })
                 )
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenUtil), UsernamePasswordAuthenticationFilter.class);
+
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(EXCLUDE_URLS).permitAll()
+                        .anyRequest().authenticated()
+                )
+
+                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenUtil),
+                        UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 
@@ -75,19 +90,12 @@ public class WebSecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://denti.thomabio.com"
+                "https://denti-cn.thomabio.com"
         ));
-
-        // ⚠ PATCH 반드시 추가해야 함!
         configuration.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
-
-        configuration.setAllowedHeaders(List.of(
-                "Content-Type", "Authorization", "X-Requested-With",
-                "Accept", "Origin"
-        ));
-
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
@@ -96,7 +104,4 @@ public class WebSecurityConfig {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
-
-
 }

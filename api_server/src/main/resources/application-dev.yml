@@ -3,7 +3,7 @@ spring:
     activate:
       on-profile: dev
   datasource:
-    url: jdbc:mysql://db-mysql-saas-dev.cfq0uo8ms95m.ap-southeast-1.rds.amazonaws.com:3306/thomastone?serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull
+    url: jdbc:mysql://db-huawei-aurora-mysql-instance-1.cfq0uo8ms95m.ap-southeast-1.rds.amazonaws.com:3306/thomastone?serverTimezone=Asia/Seoul&zeroDateTimeBehavior=convertToNull
     username: thomastone
     password: dPqkd0923!
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -74,6 +74,7 @@ server:
     max-http-form-post-size: 500MB
   forward-headers-strategy: native
   servlet:
+    context-path: /api
     encoding:
       charset: UTF-8
       force: true

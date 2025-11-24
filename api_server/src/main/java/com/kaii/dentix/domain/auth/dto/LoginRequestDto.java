@@ -1,16 +1,18 @@
 package com.kaii.dentix.domain.auth.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 
 @Getter
 public class LoginRequestDto {
     @NotBlank
     private String userType; // "admin" 또는 "user"
-
+    @Pattern(regexp = "^[a-zA-Z0-9_.@-]{3,50}$")
     @NotBlank
     private String loginId;
-
+    @Size(min = 6, max = 100)
     @NotBlank
     private String password;
 
