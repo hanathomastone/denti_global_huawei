@@ -5,8 +5,10 @@ import com.kaii.dentix.domain.admin.domain.Admin;
 import com.kaii.dentix.domain.oralCheck.dao.OralCheckRepository;
 import com.kaii.dentix.domain.oralCheck.domain.OralCheck;
 import com.kaii.dentix.domain.organization.dao.OrganizationRepository;
+import com.kaii.dentix.domain.organization.dao.OrganizationSubscriptionRepository;
 import com.kaii.dentix.domain.organization.dao.OrganizationUsageResponse;
 import com.kaii.dentix.domain.organization.domain.Organization;
+import com.kaii.dentix.domain.organization.domain.OrganizationSubscription;
 import com.kaii.dentix.domain.subscription.application.SubscriptionService;
 import com.kaii.dentix.domain.subscription.dao.SubscriptionPlanRepository;
 import com.kaii.dentix.domain.subscription.domain.SubscriptionHistory;
@@ -18,6 +20,8 @@ import org.reactivestreams.Subscription;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class OrganizationUsageService {
     private final OralCheckRepository oralCheckRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final SubscriptionService subscriptionService;
+    private final OrganizationSubscriptionRepository organizationSubscriptionRepository;
 
     @Transactional
     public OrganizationUsageResponse getMyOrganizationUsage(Long adminId) {
@@ -35,33 +40,46 @@ public class OrganizationUsageService {
                 .orElseThrow(() -> new NotFoundDataException("관리자를 찾을 수 없습니다."));
 
         Organization organization = admin.getOrganization();
+        Long organizationId = organization.getOrganizationId();
 
-        SubscriptionHistory subscriptionHistory =
-                subscriptionService.getCurrentSubscription(organization.getOrganizationId());
+        OrganizationSubscription sub = organizationSubscriptionRepository
+                .findByOrganization_OrganizationId(organizationId)
+                .orElseThrow(() -> new NotFoundDataException("현재 구독 정보가 없습니다."));
 
-        Long successCount =
-                oralCheckRepository.countSuccessByOrganization(organization.getOrganizationId());
+        Integer max = sub.getSubscriptionPlan().getMaxSuccessResponses();
 
-        Integer max = subscriptionHistory.getSubscriptionPlan().getMaxSuccessResponses();
+        // 🔥 LocalDateTime → Date 변환 (Asia/Seoul 기준)
+        ZoneId zone = ZoneId.of("Asia/Seoul");
+        Date startDate = Date.from(sub.getSubscriptionStartDate().atZone(zone).toInstant());
+        Date endDate   = Date.from(sub.getSubscriptionEndDate().atZone(zone).toInstant());
+
+        // 🔥 구독 기간 동안 사용량
+        Long successCount = oralCheckRepository.countSubscriptionPeriodUsage(
+                organizationId,
+                startDate,
+                endDate
+        );
+
+        // 🔥 음수 허용 잔여량
         Long remaining = max - successCount;
 
-        double usageRate = (max == 0) ? 0 : (double) successCount / max;
+        double usageRate = (max != null && max > 0)
+                ? (double) successCount / max
+                : 0.0;
 
         return OrganizationUsageResponse.builder()
-                .subscriptionPlanName(subscriptionHistory.getSubscriptionPlan().getPlanName().name())
+                .subscriptionPlanName(sub.getSubscriptionPlan().getPlanName().name())
                 .maxSuccessResponses(max)
                 .successCount(successCount)
-                .remainingResponses(remaining)
+                .remainingResponses(remaining)   // 초과 시 -값
                 .usageRate(usageRate)
 
-                // 🔥 사용량
-                .dailyUsage(oralCheckRepository.countTodayUsage(organization.getOrganizationId()))
-                .weeklyUsage(oralCheckRepository.countThisWeekUsage(organization.getOrganizationId()))
-                .monthlyUsage(oralCheckRepository.countThisMonthUsage(organization.getOrganizationId()))
+                .dailyUsage(oralCheckRepository.countTodayUsage(organizationId))
+                .weeklyUsage(oralCheckRepository.countThisWeekUsage(organizationId))
+                .monthlyUsage(oralCheckRepository.countThisMonthUsage(organizationId))
 
-                // 🔥 DTO로 반환
-                .topUsers(oralCheckRepository.findTopUsers(organization.getOrganizationId()))
-                .recentUsages(oralCheckRepository.findRecentUsages(organization.getOrganizationId()))
+                .topUsers(oralCheckRepository.findTopUsers(organizationId))
+                .recentUsages(oralCheckRepository.findRecentUsages(organizationId))
 
                 .build();
     }

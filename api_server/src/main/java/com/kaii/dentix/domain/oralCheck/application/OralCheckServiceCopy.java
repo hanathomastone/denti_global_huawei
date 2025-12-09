@@ -1,4 +1,4 @@
-//package com.kaii.dentix.domain.oralCheck.application;
+package com.kaii.dentix.domain.oralCheck.application;//package com.kaii.dentix.domain.oralCheck.application;
 //
 //import com.fasterxml.jackson.core.JsonProcessingException;
 //import com.fasterxml.jackson.databind.ObjectMapper;

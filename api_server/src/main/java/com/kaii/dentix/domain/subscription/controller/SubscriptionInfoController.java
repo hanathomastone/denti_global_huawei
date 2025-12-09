@@ -1,4 +1,4 @@
-//package com.kaii.dentix.domain.subscription.controller;
+package com.kaii.dentix.domain.subscription.controller;//package com.kaii.dentix.domain.subscription.controller;
 //
 //import com.kaii.dentix.domain.subscription.application.SubscriptionInfoService;
 //import com.kaii.dentix.domain.subscription.application.SubscriptionService;

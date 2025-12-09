@@ -142,12 +142,15 @@ ORDER BY COUNT(oc) DESC
 
     @Query("""
     SELECT new com.kaii.dentix.domain.organization.dto.TopUserUsage(
-        o.user.userId,
+        u.userId,
+        u.userName,
+        u.userLoginIdentifier,
         COUNT(o)
     )
     FROM OralCheck o
-    WHERE o.user.organization.organizationId = :orgId
-    GROUP BY o.user.userId
+    JOIN o.user u
+    WHERE u.organization.organizationId = :orgId
+    GROUP BY u.userId, u.userName, u.userLoginIdentifier
     ORDER BY COUNT(o) DESC
 """)
     List<TopUserUsage> findTopUsers(Long orgId);
@@ -156,13 +159,28 @@ ORDER BY COUNT(oc) DESC
     @Query("""
     SELECT new com.kaii.dentix.domain.organization.dto.RecentUsage(
         o.oralCheckId,
-        o.user.userName,
+        u.userName,
+        u.userLoginIdentifier,
         o.oralCheckResultTotalType,
         o.created
     )
     FROM OralCheck o
-    WHERE o.user.organization.organizationId = :orgId
+    JOIN o.user u
+    WHERE u.organization.organizationId = :orgId
     ORDER BY o.created DESC
 """)
     List<RecentUsage> findRecentUsages(Long orgId);
+
+    @Query("""
+    SELECT COUNT(oc)
+    FROM OralCheck oc
+    WHERE oc.user.organization.organizationId = :orgId
+      AND oc.created >= :start
+      AND oc.created < :end
+""")
+    Long countSubscriptionPeriodUsage(
+            Long orgId,
+            Date start,
+            Date end
+    );
 }

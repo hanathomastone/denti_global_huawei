@@ -1,5 +1,6 @@
 package com.kaii.dentix.domain.organization.dto;
 
+import com.kaii.dentix.domain.organizationSubscriptionHistory.domain.OrganizationSubscriptionHistory;
 import com.kaii.dentix.domain.subscription.domain.SubscriptionHistory;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,12 +18,12 @@ public class OrganizationSubscriptionHistoryResponse {
     private Long historyId;
     private String subscriptionPlanName;
     private String planCycle;
-    private Double price;
+    private Long price;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private String reason;
 
-    public static OrganizationSubscriptionHistoryResponse fromEntity(SubscriptionHistory entity) {
+    public static OrganizationSubscriptionHistoryResponse fromEntity(OrganizationSubscriptionHistory entity) {
         return OrganizationSubscriptionHistoryResponse.builder()
                 .historyId(entity.getId())
                 .subscriptionPlanName(entity.getSubscriptionPlan().getPlanName().name()) // ✅ Enum → String 변환

@@ -1,6 +1,7 @@
 package com.kaii.dentix.domain.billing.dto;
 
 import com.kaii.dentix.domain.billing.domain.Billing;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,14 +13,16 @@ import java.util.Date;
  */
 @Getter
 @Builder
+@AllArgsConstructor
 public class BillingResponse {
 
     private Long billingId;
     private String subscriptionPlanName;
     private String billingType;
     private String billingStatus;
-    private Double amount;
+    private Long amount;
     private LocalDateTime billedAt;
+    private Date created;
     private LocalDateTime paidAt;
     private LocalDateTime periodStart;
     private LocalDateTime periodEnd;
@@ -33,6 +36,7 @@ public class BillingResponse {
                 .billingStatus(b.getBillingStatus().name())
                 .amount(b.getAmount())
                 .billedAt(b.getBilledAt())
+                .created(b.getCreated())
                 .paidAt(b.getPaidAt())
                 .periodStart(b.getPeriodStart())
                 .periodEnd(b.getPeriodEnd())

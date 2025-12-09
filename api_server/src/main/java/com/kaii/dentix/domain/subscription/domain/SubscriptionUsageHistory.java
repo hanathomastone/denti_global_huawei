@@ -1,4 +1,4 @@
-//package com.kaii.dentix.domain.subscription.domain;
+package com.kaii.dentix.domain.subscription.domain;//package com.kaii.dentix.domain.subscription.domain;
 //
 //import com.kaii.dentix.domain.organization.domain.Organization;
 //import jakarta.persistence.*;
