@@ -3,6 +3,7 @@ package com.kaii.dentix.domain.admin.controller;
 import com.kaii.dentix.domain.admin.application.AdminService;
 import com.kaii.dentix.domain.admin.dao.AdminRepository;
 import com.kaii.dentix.domain.admin.domain.Admin;
+import com.kaii.dentix.domain.billing.application.BillingExcelGenerator;
 import com.kaii.dentix.domain.billing.application.BillingExportService;
 import com.kaii.dentix.domain.billing.application.BillingService;
 import com.kaii.dentix.domain.billing.dto.*;
@@ -39,7 +40,7 @@ import java.util.Map;
 public class AdminBillingController {
 
     private final BillingService billingService;
-    private final BillingExportService billingExportService;
+    private final BillingExcelGenerator billingExcelGenerator;
     private final AdminService adminService;
     private final OrganizationService organizationService;
     private final JwtTokenUtil jwtTokenUtil;
@@ -100,19 +101,19 @@ public class AdminBillingController {
      * - 기관 관리자는 자신의 기관만 가능
      * - 슈퍼관리자는 organizationId 지정 가능
      */
-    @GetMapping("/export/excel")
-    public void exportBillingExcel(
-            @RequestParam(required = false) Long organizationId,
-            HttpServletRequest request,
+    @GetMapping(value = "/export/excel", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public void exportAllBillingExcel(
+            @RequestParam Long organizationId,
             HttpServletResponse response
     ) throws IOException {
-        ByteArrayOutputStream out = billingExportService.exportBillingExcel(request, organizationId);
+
+        BillingExcelData bundle = billingService.getBillingExcelBundle(organizationId);
 
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        response.setHeader("Content-Disposition", "attachment; filename=billing_history.xlsx");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=billing_all_" + organizationId + ".xlsx");
 
-        out.writeTo(response.getOutputStream());
-        out.close();
+        billingExcelGenerator.generateExcel(bundle, response.getOutputStream());
     }
     @GetMapping("/overuse/by-subscription")
     public ResponseEntity<?> getOveruseBySubscription(HttpServletRequest request) {

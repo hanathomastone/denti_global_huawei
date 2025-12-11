@@ -75,21 +75,19 @@ public class WebSecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(EXCLUDE_URLS).permitAll()
-                        // 🔥 파일 다운로드는 인증 없이 허용 (가장 먼저 선언해야 함)
                         .requestMatchers("/admin/billing/export/excel").permitAll()
                         .requestMatchers("/admin/user/bulk-upload/template").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
 
-                        // 🔥 Admin API 전체: 인증 필요 (이게 더 아래 있어야 export가 막히지 않음)
+                        // Admin API 전체
                         .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // SuperAdmin API
                         .requestMatchers("/superadmin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
+                        // 모든 나머지 요청은 USER / ADMIN / SUPER_ADMIN 허용
                         .anyRequest().hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
-                        .anyRequest().authenticated()
                 )
-
                 .addFilterBefore(new JwtAuthenticationFilter(jwtTokenUtil),
                         UsernamePasswordAuthenticationFilter.class);
 
