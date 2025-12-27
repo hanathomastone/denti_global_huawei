@@ -1,6 +1,7 @@
 package com.kaii.dentix.domain.billing.dto;
 
 import com.kaii.dentix.domain.billing.domain.Billing;
+import com.kaii.dentix.domain.billing.util.BillingDescriptionMapper;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -64,7 +65,7 @@ public class BillingOveruseResponse {
                     .amount(billing.getAmount())
                     .billedAt(billing.getBilledAt())
                     .billingStatus(billing.getBillingStatus().name())
-                    .description(billing.getDescription())
+                    .description(BillingDescriptionMapper.toEnglish(billing.getDescription()))
                     .build();
         }
     }
