@@ -1,12 +1,13 @@
-package com.kaii.dentix.domain.huawei.application;
+package com.kaii.dentix.domain.huawei2.application;
 
 import com.amazonaws.util.EC2MetadataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kaii.dentix.domain.huawei.dto.AppInfo;
-import com.kaii.dentix.domain.huawei.dto.CheckInstanceInfo;
-import com.kaii.dentix.domain.huawei.util.ChangeStatus;
-import com.kaii.dentix.domain.huawei.util.ResultCodeEnum;
+import com.kaii.dentix.domain.huawei2.application.IsvProduceService;
+import com.kaii.dentix.domain.huawei2.dto.AppInfo;
+import com.kaii.dentix.domain.huawei2.dto.CheckInstanceInfo;
+import com.kaii.dentix.domain.huawei2.util.ChangeStatus;
+import com.kaii.dentix.domain.huawei2.util.ResultCodeEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

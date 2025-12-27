@@ -1,7 +1,7 @@
-package com.kaii.dentix.domain.huawei.controller;
-import com.kaii.dentix.domain.huawei.application.IsvProduceService;
-import com.kaii.dentix.domain.huawei.util.Activity;
-import com.kaii.dentix.domain.huawei.util.ResultCodeEnum;
+package com.kaii.dentix.domain.huawei2.controller;
+import com.kaii.dentix.domain.huawei2.application.IsvProduceService;
+import com.kaii.dentix.domain.huawei2.util.Activity;
+import com.kaii.dentix.domain.huawei2.util.ResultCodeEnum;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

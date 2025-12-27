@@ -1,6 +1,6 @@
-package com.kaii.dentix.domain.huawei.application;
+package com.kaii.dentix.domain.huawei2.application;
 
-import com.kaii.dentix.domain.huawei.dto.*;
+import com.kaii.dentix.domain.huawei2.dto.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package com.kaii.dentix.domain.huawei.dto;
+package com.kaii.dentix.domain.huawei2.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -13,6 +13,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -30,90 +31,101 @@ public class WebSecurityConfig {
             "/actuator/health",
             "/docs/*",
 
-            "/login", "/login/*",
-            "/password/*",
+            "/login", "/login/**",
+            "/password/**",
 
             "/service-agreement",
-            "/contents", "/contents/*",
-            "/isv/*", "/isv",
+            "/contents/**",
+            "/isv/**",
             "/organizations/check/**",
 
             "/admin/login",
-            "/admin/register", "/admin/register/*",
-            "/admin/account", "/admin/account/*",
+            "/admin/register/**",
+            "/admin/account/**",
             "/admin/password",
             "/admin/find-password",
             "/admin/auto-login"
     };
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
+    @Bean public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
 
         http
                 .httpBasic(AbstractHttpConfigurer::disable)
-                .csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // ★ 여기서 응답 헤더 직접 추가 (XSS / MIME / CSP / Frame 방지)
+                // ✅ sCSRF 재활성화 (중요)
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(
+                                CookieCsrfTokenRepository.withHttpOnlyFalse()
+                        )
+                        .ignoringRequestMatchers(
+                                "/login/**",
+                                "/admin/login",
+                                "/admin/auto-login",
+                                "/isv/**"          // ⭐ 이거 반드시 필요
+                        )
+                )
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+
+                // ✅ 헤더는 최소한만 (nginx와 중복 제거)
                 .headers(headers -> headers
-                        .addHeaderWriter((request, response) -> {
-                            // 스캐너가 요구하는 XSS 관련 헤더들
-                            response.setHeader("X-XSS-Protection", "1; mode=block");
-                            response.setHeader("X-Content-Type-Options", "nosniff");
-                            response.setHeader("X-Frame-Options", "DENY");
-                            // 너무 빡세지 않게 기본 CSP
-                            response.setHeader("Content-Security-Policy",
-                                    "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none'");
-                        })
+                        .xssProtection(xss -> xss.disable()) // 헤더 직접 추가 안 함
+                        .contentTypeOptions(content -> {})
+                        .frameOptions(frame -> frame.deny())
                 )
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(EXCLUDE_URLS).permitAll()
-                        // 🔥 파일 다운로드는 인증 없이 허용 (가장 먼저 선언해야 함)
-                        .requestMatchers("/admin/billing/export/excel").permitAll()
-                        .requestMatchers("/admin/user/bulk-upload/template").permitAll()
-                        .requestMatchers("/actuator/health").permitAll()
 
-                        // 🔥 Admin API 전체: 인증 필요 (이게 더 아래 있어야 export가 막히지 않음)
-                        .requestMatchers("/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // 파일 다운로드
+                        .requestMatchers(
+                                "/admin/billing/export/excel",
+                                "/admin/user/bulk-upload/template"
+                        ).permitAll()
 
-                        // SuperAdmin API
-                        .requestMatchers("/superadmin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // Admin
+                        .requestMatchers("/admin/**")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
-                        .anyRequest().hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
+                        // SuperAdmin
+                        .requestMatchers("/superadmin/**")
+                        .hasAnyRole("SUPER_ADMIN")
+
                         .anyRequest().authenticated()
                 )
 
-                .addFilterBefore(new JwtAuthenticationFilter(jwtTokenUtil),
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        new JwtAuthenticationFilter(jwtTokenUtil),
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
+        CorsConfiguration config = new CorsConfiguration();
 
-        configuration.setAllowedOriginPatterns(List.of(
+        config.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
                 "https://denti-cn.thomabio.com"
         ));
-        configuration.setAllowedMethods(List.of(
+        config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setExposedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setMaxAge(3600L);
+        config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("X-CSRF-TOKEN"));
+        config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
         return source;
     }
 }

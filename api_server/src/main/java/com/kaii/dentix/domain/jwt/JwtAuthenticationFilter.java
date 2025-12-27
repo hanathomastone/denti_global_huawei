@@ -31,29 +31,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+
         String requestURI = request.getRequestURI();
 
-        // 🍀 1) context-path(/api) 제거 → Security 매칭 방식과 완전히 일치
+        // ⭐ 1. ISV API 완전 제외 (가장 중요)
+        if (requestURI.startsWith("/isv")
+                || requestURI.startsWith("/api/isv")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // ⭐ 2. context-path 제거
         if (requestURI.startsWith("/api/")) {
-            requestURI = requestURI.substring(4);  // "/api" 제거
+            requestURI = requestURI.substring(4);
         } else if (requestURI.equals("/api")) {
             requestURI = "/";
         }
 
         final String uri = requestURI;
 
-        // 🍀 2) EXCLUDE_URLS 와 완전 일치 매칭 (prefix 기반)
+        // ⭐ 3. permitAll 검사
         boolean permitAll = Arrays.stream(EXCLUDE_URLS)
                 .anyMatch(url -> uri.startsWith(url.replace("*", "")));
 
-        // 추가 허용 케이스
-        if (uri.startsWith("/admin/user/bulk-upload/template")) {
-            permitAll = true;
-        }
-
-        log.info("[JWT Filter] requestURI={}, permitAll={}", requestURI, permitAll);
-
-        // 🍀 3) 인증 필요 없는 경우 → JWT 검사 없이 다음 필터로
         if (permitAll) {
             chain.doFilter(request, response);
             return;

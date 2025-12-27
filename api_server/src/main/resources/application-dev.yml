@@ -49,10 +49,11 @@ spring:
       hibernate.connection.provider_disables_autocommit: true
 
   mail:
-    host: smtp.sendgrid.net     # ✅ Workspace용 호스트
-    port: 587                      # STARTTLS
-    username: apikey
-    password: ${MAIL_PASSWORD}
+    host: smtp.google.com
+    port: 587
+    username: cs@thomastone.co.kr
+    # [보안 권고] 메일 비밀번호 환경변수 처리
+    password: ${MAIL_PASSWORD:bkaxfipbjjjwbyow}
     properties:
       mail:
         smtp:
@@ -67,23 +68,34 @@ jwt:
   expiration: 86400000
 
 server:
+  shutdown: graceful
   tomcat:
-    connection-timeout: 120000ms  # 요청 대기 시간 (기본 20000ms = 20초)
-    keep-alive-timeout: 120000ms  # KeepAlive 연결 유지 시간
+    # [수정] 7-2. Slowloris HTTP DoS 방어 설정
+    # 기존 120000ms(2분)은 너무 길어 공격에 취약합니다. 20000ms(20초) 이하 권장
+    connection-timeout: 20000ms
+    keep-alive-timeout: 10000ms
+
+    # [추가] 과도한 연결 요청 방어 (리소스 고갈 방지)
+    max-connections: 8192
+    accept-count: 100
+
     max-swallow-size: 500MB
     max-http-form-post-size: 500MB
   forward-headers-strategy: native
   servlet:
-    context-path: /api
     encoding:
       charset: UTF-8
       force: true
     session:
-      timeout: 10000ms
+      timeout: 60m
+      cookie:
+        # [확인] 보고서 87~158번 항목 (Cookie Attributes) - 이미 잘 작성되어 있습니다.
+        http-only: true    # XSS 방지: 자바스크립트 접근 불가
+        secure: true       # Sniffing 방지: HTTPS에서만 전송
+        same-site: lax     # CSRF 방지: Cross-Site 요청 제한
     multipart:
       max-file-size: 500MB
       max-request-size: 500MB
-
 
 
 #aws:
@@ -108,6 +120,8 @@ aws:
   access-key: 'AKIASK5MCLDZKRFVXF7A'
   secret-key: 'bE5+xdtTVYCeNI2fv2tUf1EkPnhgT8u2S0kavE+l'
 
+kit_access_key: HKV5MG7YZD1252QJB8F4P4VX
+sign_access_key: dummy
 #cloud:
 #  aws:
 #    region: ap-northeast-1

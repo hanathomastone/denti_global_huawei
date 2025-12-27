@@ -1,6 +1,5 @@
-package com.kaii.dentix.domain.huawei.dto;
+package com.kaii.dentix.domain.huawei2.dto;
 
-import com.amazonaws.util.EC2MetadataUtils;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

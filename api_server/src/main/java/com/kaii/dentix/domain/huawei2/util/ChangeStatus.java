@@ -1,4 +1,4 @@
-package com.kaii.dentix.domain.huawei.util;
+package com.kaii.dentix.domain.huawei2.util;
 
 public class ChangeStatus {
 
